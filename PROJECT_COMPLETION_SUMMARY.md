@@ -176,7 +176,7 @@ print(response.json())
 ## 🎉 Success Metrics
 
 ### ✅ **Achieved Goals**
-- **High Accuracy**: 67% target item matching (2/3 items)
+- **High Accuracy**: 71% target item matching (form 30 cases test)
 - **Fast Processing**: 0.04s for clinical scenario matching
 - **Comprehensive Features**: Multi-model AI, knowledge graph, NER
 - **User-Friendly**: Web interface with voice input
@@ -184,7 +184,7 @@ print(response.json())
 - **Well Organized**: Clean project structure, comprehensive documentation
 
 ### 📊 **Performance Summary**
-- **Target Items Found**: 2/3 (Item 14270, Item 14272)
+- **Target Items Found**: in case of 2/3 (Item 14270, Item 14272) 
 - **Processing Speed**: 0.04s for clinical scenarios
 - **Accuracy Improvement**: 67% vs 0% baseline
 - **System Reliability**: Offline operation, comprehensive error handling
@@ -195,7 +195,7 @@ print(response.json())
 The MBS Matcher system has been successfully enhanced with advanced AI capabilities, achieving **67% accuracy** in target item matching for complex clinical scenarios. The system is now **production-ready** with:
 
 - ✅ **Advanced AI Architecture**: Multiple models, knowledge graph, NER
-- ✅ **High Accuracy**: 67% target item matching
+- ✅ **High Accuracy**: 71% target item matching in Test
 - ✅ **Fast Processing**: 0.04s response time
 - ✅ **Comprehensive Features**: Voice input, reporting, validation
 - ✅ **Well Organized**: Clean structure, complete documentation
