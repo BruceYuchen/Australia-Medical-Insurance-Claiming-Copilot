@@ -1,4 +1,4 @@
-# 🎉 MBS Matcher - Project Completion Summary
+# 🎉 Australia-Medical-Insurance-Claiming-Copilot - Project Completion Summary
 
 ## ✅ What We've Accomplished
 
