@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBS匹配系统 - 智能项目建议与验证</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .confidence-bar {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+        }
+        .confidence-fill {
+            transition: width 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 头部 -->
+    <header class="bg-white shadow-lg border-b-4 border-blue-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-stethoscope text-3xl text-blue-600 mr-3"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">MBS匹配系统</h1>
+                        <p class="text-sm text-gray-600">智能项目建议与申报验证</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="systemStatus" class="flex items-center">
+                        <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">检查中...</span>
+                    </div>
+                    <button id="refreshBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>刷新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 主要功能区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 左侧：症状搜索 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center mb-6">
+                    <i class="fas fa-search text-2xl text-blue-600 mr-3"></i>
+                    <h2 class="text-xl font-bold text-gray-900">症状文本搜索</h2>
+                </div>
+                
+                <form id="searchForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">症状描述</label>
+                        <textarea 
+                            id="symptomText" 
+                            rows="4" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="请输入患者的症状描述，例如：患者主诉胸痛、呼吸困难，需要咨询..."
+                        ></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">设置</label>
+                            <select id="setting" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="consulting_rooms">咨询室</option>
+                                <option value="institution">机构</option>
+                                <option value="home">家庭</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">持续时间(分钟)</label>
+                            <input type="number" id="duration" value="30" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">提供者类型</label>
+                            <select id="provider" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="general practitioner">全科医生</option>
+                                <option value="specialist">专科医生</option>
+                                <option value="consultant physician">顾问医生</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">患者类型</label>
+                            <select id="patientType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <option value="community">社区患者</option>
+                                <option value="hospital_inpatient">住院患者</option>
+                                <option value="aged_care">养老院患者</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="referral" class="mr-2">
+                                <span class="text-sm text-gray-700">转诊患者</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                            <i class="fas fa-search mr-2"></i>搜索项目
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- 搜索结果 -->
+                <div id="searchResults" class="mt-6 hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">搜索结果</h3>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-600">按置信度排序</span>
+                            <button id="sortBtn" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="suggestionsList" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- 右侧：项目验证 -->
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="flex items-center mb-6">
+                    <i class="fas fa-check-circle text-2xl text-green-600 mr-3"></i>
+                    <h2 class="text-xl font-bold text-gray-900">项目验证</h2>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择要验证的项目</label>
+                        <div id="selectedItems" class="min-h-[100px] border-2 border-dashed border-gray-300 rounded-lg p-4">
+                            <p class="text-gray-500 text-center">从左侧搜索结果中选择项目进行验证</p>
+                        </div>
+                    </div>
+                    
+                    <button id="validateBtn" class="w-full bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        <i class="fas fa-check mr-2"></i>验证申报
+                    </button>
+                    
+                    <!-- 验证结果 -->
+                    <div id="validationResults" class="hidden">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">验证结果</h3>
+                        <div id="validationContent" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统统计信息 -->
+        <div class="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-chart-bar text-2xl text-purple-600 mr-3"></i>
+                <h2 class="text-xl font-bold text-gray-900">系统统计</h2>
+            </div>
+            <div id="statisticsContent" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-blue-600" id="totalItems">-</div>
+                    <div class="text-sm text-gray-600">总项目数</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-green-600" id="totalRules">-</div>
+                    <div class="text-sm text-gray-600">规则数量</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-bold text-purple-600" id="processingTime">-</div>
+                    <div class="text-sm text-gray-600">处理时间(ms)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">处理中...</span>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentSuggestions = [];
+        let selectedItems = new Set();
+        let sortOrder = 'desc'; // desc: 降序, asc: 升序
+
+        // API基础URL
+        const API_BASE = 'http://localhost:8000';
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        // 初始化应用
+        async function initializeApp() {
+            await checkSystemHealth();
+            await loadStatistics();
+            setupEventListeners();
+        }
+
+        // 检查系统健康状态
+        async function checkSystemHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const health = await response.json();
+                
+                const statusElement = document.getElementById('systemStatus');
+                if (health.status === 'healthy') {
+                    statusElement.innerHTML = `
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-green-600">系统正常</span>
+                    `;
+                } else {
+                    statusElement.innerHTML = `
+                        <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-red-600">系统异常</span>
+                    `;
+                }
+            } catch (error) {
+                console.error('健康检查失败:', error);
+                const statusElement = document.getElementById('systemStatus');
+                statusElement.innerHTML = `
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-red-600">连接失败</span>
+                `;
+            }
+        }
+
+        // 加载统计信息
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`${API_BASE}/statistics`);
+                const stats = await response.json();
+                
+                document.getElementById('totalItems').textContent = stats.total_items || 0;
+                
+                // 获取规则数量
+                const rulesResponse = await fetch(`${API_BASE}/rules`);
+                const rules = await rulesResponse.json();
+                document.getElementById('totalRules').textContent = rules.total_rules || 0;
+                
+            } catch (error) {
+                console.error('加载统计信息失败:', error);
+            }
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 搜索表单提交
+            document.getElementById('searchForm').addEventListener('submit', handleSearch);
+            
+            // 验证按钮
+            document.getElementById('validateBtn').addEventListener('click', handleValidation);
+            
+            // 排序按钮
+            document.getElementById('sortBtn').addEventListener('click', toggleSort);
+            
+            // 刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', initializeApp);
+        }
+
+        // 处理搜索
+        async function handleSearch(e) {
+            e.preventDefault();
+            
+            const symptomText = document.getElementById('symptomText').value.trim();
+            if (!symptomText) {
+                alert('请输入症状描述');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const requestData = {
+                    transcript: symptomText,
+                    context: {
+                        setting: document.getElementById('setting').value,
+                        duration: parseInt(document.getElementById('duration').value),
+                        referral: document.getElementById('referral').checked,
+                        provider: document.getElementById('provider').value,
+                        date: new Date().toISOString(),
+                        patient_type: document.getElementById('patientType').value
+                    },
+                    top_k: 10
+                };
+
+                const response = await fetch(`${API_BASE}/suggest_items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    currentSuggestions = result.suggestions || [];
+                    displaySuggestions(currentSuggestions);
+                    document.getElementById('searchResults').classList.remove('hidden');
+                } else {
+                    throw new Error(result.detail || '搜索失败');
+                }
+                
+            } catch (error) {
+                console.error('搜索失败:', error);
+                alert('搜索失败: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 显示建议结果
+        function displaySuggestions(suggestions) {
+            const container = document.getElementById('suggestionsList');
+            container.innerHTML = '';
+
+            if (suggestions.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">未找到相关项目</p>';
+                return;
+            }
+
+            // 按置信度排序
+            const sortedSuggestions = [...suggestions].sort((a, b) => {
+                return sortOrder === 'desc' ? b.score - a.score : a.score - b.score;
+            });
+
+            sortedSuggestions.forEach((suggestion, index) => {
+                const itemElement = createSuggestionElement(suggestion, index);
+                container.appendChild(itemElement);
+            });
+        }
+
+        // 创建建议项目元素
+        function createSuggestionElement(suggestion, index) {
+            const div = document.createElement('div');
+            div.className = 'border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer fade-in';
+            div.style.animationDelay = `${index * 0.1}s`;
+            
+            const confidence = suggestion.score;
+            const confidencePercent = Math.round(confidence * 100);
+            const confidenceColor = getConfidenceColor(confidence);
+            
+            div.innerHTML = `
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="mr-3 suggestion-checkbox" data-item-num="${suggestion.item_num}">
+                        <div>
+                            <h4 class="font-semibold text-gray-900">Item ${suggestion.item_num}</h4>
+                            <p class="text-sm text-gray-600">${suggestion.group} - 类别 ${suggestion.category}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-lg font-bold ${confidenceColor}">${confidencePercent}%</div>
+                        <div class="text-xs text-gray-500">置信度</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="confidence-fill h-2 rounded-full confidence-bar" style="width: ${confidencePercent}%"></div>
+                    </div>
+                </div>
+                
+                <p class="text-sm text-gray-700 mb-2 line-clamp-2">${suggestion.description}</p>
+                
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span>匹配字段: ${suggestion.matched_fields.join(', ')}</span>
+                    <span>${suggestion.provider_type || '无限制'}</span>
+                </div>
+            `;
+            
+            // 添加点击事件
+            const checkbox = div.querySelector('.suggestion-checkbox');
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    selectedItems.add(suggestion.item_num);
+                } else {
+                    selectedItems.delete(suggestion.item_num);
+                }
+                updateSelectedItems();
+                updateValidateButton();
+            });
+            
+            return div;
+        }
+
+        // 获取置信度颜色
+        function getConfidenceColor(score) {
+            if (score >= 0.8) return 'text-green-600';
+            if (score >= 0.6) return 'text-yellow-600';
+            if (score >= 0.4) return 'text-orange-600';
+            return 'text-red-600';
+        }
+
+        // 更新已选择项目显示
+        function updateSelectedItems() {
+            const container = document.getElementById('selectedItems');
+            
+            if (selectedItems.size === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center">从左侧搜索结果中选择项目进行验证</p>';
+                return;
+            }
+            
+            const selectedSuggestions = currentSuggestions.filter(s => selectedItems.has(s.item_num));
+            container.innerHTML = selectedSuggestions.map(suggestion => `
+                <div class="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm mr-2 mb-2">
+                    Item ${suggestion.item_num} (${Math.round(suggestion.score * 100)}%)
+                    <button onclick="removeItem('${suggestion.item_num}')" class="ml-2 text-blue-600 hover:text-blue-800">×</button>
+                </div>
+            `).join('');
+        }
+
+        // 移除项目
+        function removeItem(itemNum) {
+            selectedItems.delete(itemNum);
+            updateSelectedItems();
+            updateValidateButton();
+            
+            // 更新复选框状态
+            const checkboxes = document.querySelectorAll('.suggestion-checkbox');
+            checkboxes.forEach(checkbox => {
+                if (checkbox.dataset.itemNum === itemNum) {
+                    checkbox.checked = false;
+                }
+            });
+        }
+
+        // 更新验证按钮状态
+        function updateValidateButton() {
+            const validateBtn = document.getElementById('validateBtn');
+            validateBtn.disabled = selectedItems.size === 0;
+        }
+
+        // 切换排序
+        function toggleSort() {
+            sortOrder = sortOrder === 'desc' ? 'asc' : 'desc';
+            const sortIcon = document.getElementById('sortBtn').querySelector('i');
+            sortIcon.className = sortOrder === 'desc' ? 'fas fa-sort-amount-down' : 'fas fa-sort-amount-up';
+            
+            if (currentSuggestions.length > 0) {
+                displaySuggestions(currentSuggestions);
+            }
+        }
+
+        // 处理验证
+        async function handleValidation() {
+            if (selectedItems.size === 0) {
+                alert('请先选择要验证的项目');
+                return;
+            }
+
+            showLoading();
+            
+            try {
+                const requestData = {
+                    selected_items: Array.from(selectedItems),
+                    context: {
+                        setting: document.getElementById('setting').value,
+                        duration: parseInt(document.getElementById('duration').value),
+                        referral: document.getElementById('referral').checked,
+                        provider: document.getElementById('provider').value,
+                        date: new Date().toISOString(),
+                        patient_type: document.getElementById('patientType').value
+                    }
+                };
+
+                const response = await fetch(`${API_BASE}/validate_claim`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    displayValidationResults(result);
+                    document.getElementById('validationResults').classList.remove('hidden');
+                } else {
+                    throw new Error(result.detail || '验证失败');
+                }
+                
+            } catch (error) {
+                console.error('验证失败:', error);
+                alert('验证失败: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // 显示验证结果
+        function displayValidationResults(result) {
+            const container = document.getElementById('validationContent');
+            const validation = result.result;
+            
+            // 更新处理时间
+            document.getElementById('processingTime').textContent = Math.round(result.processing_time * 1000);
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                            <h4 class="font-semibold text-green-800">可计费项目</h4>
+                        </div>
+                        <div class="text-2xl font-bold text-green-600">${validation.billable_items.length}</div>
+                        <div class="text-sm text-green-700">${validation.billable_items.join(', ')}</div>
+                    </div>
+                    
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-times-circle text-red-600 mr-2"></i>
+                            <h4 class="font-semibold text-red-800">被拒绝项目</h4>
+                        </div>
+                        <div class="text-2xl font-bold text-red-600">${validation.rejected_items.length}</div>
+                        <div class="text-sm text-red-700">${validation.rejected_items.join(', ') || '无'}</div>
+                    </div>
+                </div>
+                
+                ${validation.conflicts.length > 0 ? `
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                            <h4 class="font-semibold text-yellow-800">冲突信息</h4>
+                        </div>
+                        <div class="text-sm text-yellow-700">
+                            ${validation.conflicts.map(conflict => `
+                                <div class="mb-1">• ${conflict.type}: ${conflict.conflicting_items?.join(', ')}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${validation.why.length > 0 ? `
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            <h4 class="font-semibold text-blue-800">原因说明</h4>
+                        </div>
+                        <div class="text-sm text-blue-700">
+                            ${validation.why.map(reason => `<div class="mb-1">• ${reason}</div>`).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // 显示加载遮罩
+        function showLoading() {
+            document.getElementById('loadingOverlay').classList.remove('hidden');
+        }
+
+        // 隐藏加载遮罩
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

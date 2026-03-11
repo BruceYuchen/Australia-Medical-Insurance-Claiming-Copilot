@@ -1,0 +1,106 @@
+{
+  "report_metadata": {
+    "generated_at": "2025-09-05T15:52:46.603694",
+    "generator_version": "1.0.0",
+    "report_id": "RPT_20250905155246"
+  },
+  "patient": {
+    "patient_id": "P001",
+    "name": "John Smith",
+    "date_of_birth": "1980-05-15",
+    "gender": "Male",
+    "address": "123 Main St, Sydney, NSW 2000",
+    "medicare_number": "1234567890",
+    "phone": "0412345678",
+    "email": "john.smith@email.com"
+  },
+  "provider": {
+    "provider_id": "PR001",
+    "name": "Dr. Jane Wilson",
+    "title": "General Practitioner",
+    "specialty": "General Practice",
+    "practice_name": "Sydney Medical Centre",
+    "address": "456 Health St, Sydney, NSW 2000",
+    "phone": "0298765432",
+    "email": "j.wilson@medical.com",
+    "provider_number": "1234567A"
+  },
+  "consultation": {
+    "consultation_id": "C001",
+    "date": "2024-01-15",
+    "time": "10:30 AM",
+    "duration": 30,
+    "setting": "consulting_rooms",
+    "chief_complaint": "Chest pain and shortness of breath",
+    "history": "Patient reports chest pain that started 2 days ago, associated with shortness of breath on exertion.",
+    "examination": "Blood pressure 140/90, heart rate 88 bpm, chest clear, no signs of distress.",
+    "diagnosis": "Possible angina, rule out myocardial infarction",
+    "treatment_plan": "ECG, blood tests, cardiology referral if needed",
+    "follow_up": "Return in 1 week or sooner if symptoms worsen",
+    "referral": true,
+    "referral_reason": "Cardiology consultation for chest pain evaluation"
+  },
+  "mbs_items": [
+    {
+      "item_number": "3",
+      "description": "Professional attendance by a general practitioner",
+      "fee": 75.0,
+      "group": "A1",
+      "category": 1,
+      "provider_type": "General Practitioner",
+      "confidence_score": 0.92,
+      "evidence": "High confidence match based on consultation type",
+      "validation_status": "approved",
+      "validation_notes": "Valid for general consultation"
+    },
+    {
+      "item_number": "4",
+      "description": "Professional attendance by a general practitioner - extended",
+      "fee": 150.0,
+      "group": "A1",
+      "category": 1,
+      "provider_type": "General Practitioner",
+      "confidence_score": 0.88,
+      "evidence": "Good match for extended consultation",
+      "validation_status": "approved",
+      "validation_notes": "Valid for extended consultation"
+    },
+    {
+      "item_number": "23",
+      "description": "Professional attendance by a general practitioner - after hours",
+      "fee": 100.0,
+      "group": "A1",
+      "category": 1,
+      "provider_type": "General Practitioner",
+      "confidence_score": 0.75,
+      "evidence": "Moderate match for after hours consultation",
+      "validation_status": "rejected",
+      "validation_notes": "Not applicable during regular hours"
+    }
+  ],
+  "validation": {
+    "billable_items": [
+      "3",
+      "4"
+    ],
+    "rejected_items": [
+      "23"
+    ],
+    "conflicts": [
+      "Item 23 not applicable during regular hours"
+    ],
+    "fixes": [
+      "Remove Item 23 or use Item 24 for after-hours consultation"
+    ],
+    "why": "Item 23 is for after-hours consultations only, but this consultation was during regular hours"
+  },
+  "financial_summary": {
+    "total_items": 3,
+    "billable_items": 2,
+    "rejected_items": 1,
+    "total_fee": 325.0,
+    "billable_total": 225.0,
+    "rejected_total": 100.0
+  },
+  "additional_data": {}
+}

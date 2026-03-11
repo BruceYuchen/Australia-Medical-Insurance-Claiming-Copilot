@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBS Matching System - Enhanced AI-Powered Search</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .confidence-bar {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+        }
+        .confidence-fill {
+            transition: width 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .search-type-card {
+            transition: all 0.3s ease;
+        }
+        .search-type-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .search-type-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .voice-recording {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b-4 border-blue-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-brain text-3xl text-blue-600 mr-3"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">MBS Matching System</h1>
+                        <p class="text-sm text-gray-600">AI-Powered Intelligent Item Suggestion & Validation</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="systemStatus" class="flex items-center">
+                        <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">Checking...</span>
+                    </div>
+                    <button id="refreshBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Search Type Selection -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Select Search Type</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="search-type-card selected border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-type="hybrid">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-magic text-2xl text-blue-600 mr-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-900">Hybrid Search</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Combines keyword and semantic understanding</p>
+                    <div class="flex items-center text-xs text-gray-500">
+                        <i class="fas fa-star text-yellow-500 mr-1"></i>
+                        <span>Recommended</span>
+                        <span class="mx-2">•</span>
+                        <span>Accuracy: Highest</span>
+                    </div>
+                </div>
+                
+                <div class="search-type-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-type="semantic">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-brain text-2xl text-purple-600 mr-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-900">Semantic Search</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">AI-powered semantic understanding</p>
+                    <div class="flex items-center text-xs text-gray-500">
+                        <span>Accuracy: High</span>
+                        <span class="mx-2">•</span>
+                        <span>Speed: Medium</span>
+                    </div>
+                </div>
+                
+                <div class="search-type-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-type="tfidf">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-search text-2xl text-green-600 mr-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-900">TF-IDF Search</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">Traditional keyword matching</p>
+                    <div class="flex items-center text-xs text-gray-500">
+                        <span>Accuracy: Medium</span>
+                        <span class="mx-2">•</span>
+                        <span>Speed: Fastest</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Form -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">Intelligent Item Search</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Input Area -->
+                <div>
+                    <div class="mb-6">
+                        <label for="symptoms" class="block text-sm font-medium text-gray-700 mb-2">
+                            Symptom Description
+                        </label>
+                        <div class="relative">
+                            <textarea
+                                id="symptoms"
+                                rows="4"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Enter patient symptoms or medical records..."
+                            ></textarea>
+                            <div class="absolute bottom-2 right-2 flex space-x-2">
+                                <button
+                                    id="voiceBtn"
+                                    class="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition-colors"
+                                    title="Voice Input"
+                                >
+                                    <i class="fas fa-microphone"></i>
+                                </button>
+                                <button
+                                    id="clearBtn"
+                                    class="bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700 transition-colors"
+                                    title="Clear Text"
+                                >
+                                    <i class="fas fa-eraser"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="voiceStatus" class="mt-2 text-sm text-gray-500 hidden">
+                            <i class="fas fa-microphone-alt mr-1"></i>
+                            <span>Listening... Speak now</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="topK" class="block text-sm font-medium text-gray-700 mb-2">
+                            Number of Results
+                        </label>
+                        <select
+                            id="topK"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="5">5 results</option>
+                            <option value="10" selected>10 results</option>
+                            <option value="15">15 results</option>
+                            <option value="20">20 results</option>
+                        </select>
+                    </div>
+
+                    <button
+                        id="searchBtn"
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-search mr-2"></i>Search Items
+                    </button>
+                </div>
+
+                <!-- Right: Context Information -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Medical Context</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="setting" class="block text-sm font-medium text-gray-700 mb-1">Setting</label>
+                            <select
+                                id="setting"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="consulting_rooms">Consulting Rooms</option>
+                                <option value="hospital">Hospital</option>
+                                <option value="home">Home</option>
+                                <option value="nursing_home">Nursing Home</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+                            <input
+                                type="number"
+                                id="duration"
+                                value="30"
+                                min="5"
+                                max="120"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="provider" class="block text-sm font-medium text-gray-700 mb-1">Provider Type</label>
+                            <select
+                                id="provider"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="general practitioner">General Practitioner</option>
+                                <option value="specialist">Specialist</option>
+                                <option value="nurse">Nurse</option>
+                                <option value="physiotherapist">Physiotherapist</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input
+                                type="checkbox"
+                                id="referral"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label for="referral" class="ml-2 block text-sm text-gray-700">
+                                Referred Patient
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        <div id="searchResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Search Results</h2>
+                    <div class="flex items-center space-x-4">
+                        <span id="searchTime" class="text-sm text-gray-500"></span>
+                        <span id="resultCount" class="text-sm text-gray-500"></span>
+                    </div>
+                </div>
+                
+                <div id="searchResultsList" class="space-y-4">
+                    <!-- Search results will be dynamically generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Selected Items Area -->
+        <div id="selectedItems" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">Selected Items</h2>
+                    <button
+                        id="clearSelectionBtn"
+                        class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                        <i class="fas fa-trash mr-1"></i>Clear Selection
+                    </button>
+                </div>
+                
+                <div id="selectedItemsList" class="space-y-2">
+                    <!-- Selected items will be displayed here -->
+                </div>
+                
+                <div class="mt-6 flex space-x-4">
+                    <button
+                        id="validateBtn"
+                        class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                        <i class="fas fa-check-circle mr-2"></i>Validate Claim
+                    </button>
+                    <button
+                        id="exportBtn"
+                        class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                        <i class="fas fa-download mr-2"></i>Export Results
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Validation Results -->
+        <div id="validationResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Validation Results</h2>
+                <div id="validationContent">
+                    <!-- Validation results will be displayed here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">Processing...</span>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let selectedItems = new Set();
+        let currentSearchType = 'hybrid';
+        let recognition = null;
+        let isListening = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            initializeVoiceRecognition();
+            checkSystemStatus();
+        });
+
+        // Event listeners
+        function initializeEventListeners() {
+            // Search type selection
+            document.querySelectorAll('.search-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectSearchType(this.dataset.type);
+                });
+            });
+
+            // Search button
+            document.getElementById('searchBtn').addEventListener('click', performSearch);
+
+            // Voice input
+            document.getElementById('voiceBtn').addEventListener('click', toggleVoiceInput);
+
+            // Clear text
+            document.getElementById('clearBtn').addEventListener('click', clearText);
+
+            // Clear selection
+            document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
+
+            // Validate button
+            document.getElementById('validateBtn').addEventListener('click', validateClaim);
+
+            // Export button
+            document.getElementById('exportBtn').addEventListener('click', exportResults);
+
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', checkSystemStatus);
+        }
+
+        // Initialize voice recognition
+        function initializeVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    document.getElementById('voiceStatus').classList.remove('hidden');
+                    document.getElementById('voiceBtn').classList.add('voice-recording');
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('symptoms').value = transcript;
+                    isListening = false;
+                    document.getElementById('voiceStatus').classList.add('hidden');
+                    document.getElementById('voiceBtn').classList.remove('voice-recording');
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    isListening = false;
+                    document.getElementById('voiceStatus').classList.add('hidden');
+                    document.getElementById('voiceBtn').classList.remove('voice-recording');
+                };
+
+                recognition.onend = function() {
+                    isListening = false;
+                    document.getElementById('voiceStatus').classList.add('hidden');
+                    document.getElementById('voiceBtn').classList.remove('voice-recording');
+                };
+            } else {
+                document.getElementById('voiceBtn').style.display = 'none';
+            }
+        }
+
+        // Toggle voice input
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert('Voice recognition not supported in this browser');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        // Clear text
+        function clearText() {
+            document.getElementById('symptoms').value = '';
+        }
+
+        // Select search type
+        function selectSearchType(type) {
+            currentSearchType = type;
+            
+            // Update UI
+            document.querySelectorAll('.search-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+        }
+
+        // Check system status
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('systemStatus');
+                if (data.status === 'healthy') {
+                    statusElement.innerHTML = `
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">System Online</span>
+                    `;
+                } else {
+                    statusElement.innerHTML = `
+                        <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">System Error</span>
+                    `;
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('systemStatus');
+                statusElement.innerHTML = `
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-gray-600">Connection Failed</span>
+                `;
+            }
+        }
+
+        // Perform search
+        async function performSearch() {
+            const symptoms = document.getElementById('symptoms').value.trim();
+            if (!symptoms) {
+                alert('Please enter symptom description');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const context = {
+                    setting: document.getElementById('setting').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    referral: document.getElementById('referral').checked,
+                    provider: document.getElementById('provider').value,
+                    date: new Date().toISOString(),
+                    patient_type: 'community'
+                };
+
+                const topK = parseInt(document.getElementById('topK').value);
+
+                let url, params;
+                if (currentSearchType === 'tfidf') {
+                    url = '/suggest_items';
+                    params = {
+                        transcript: symptoms,
+                        context: context,
+                        top_k: topK
+                    };
+                } else {
+                    url = '/suggest_items_enhanced';
+                    params = {
+                        transcript: symptoms,
+                        context: context,
+                        top_k: topK
+                    };
+                }
+
+                const startTime = performance.now();
+                const response = await fetch(url + (currentSearchType !== 'tfidf' ? `?search_type=${currentSearchType}` : ''), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                const endTime = performance.now();
+                const searchTime = endTime - startTime;
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displaySearchResults(data.suggestions, searchTime);
+                } else {
+                    throw new Error(`Search failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('Search failed: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(suggestions, searchTime) {
+            const resultsDiv = document.getElementById('searchResults');
+            const resultsList = document.getElementById('searchResultsList');
+            const searchTimeSpan = document.getElementById('searchTime');
+            const resultCountSpan = document.getElementById('resultCount');
+
+            // Update statistics
+            searchTimeSpan.textContent = `Search time: ${searchTime.toFixed(2)}ms`;
+            resultCountSpan.textContent = `Found ${suggestions.length} results`;
+
+            // Clear previous results
+            resultsList.innerHTML = '';
+
+            // Display results
+            suggestions.forEach((suggestion, index) => {
+                const confidence = Math.round(suggestion.score * 100);
+                const confidenceColor = getConfidenceColor(confidence);
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = 'border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow fade-in';
+                resultItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                class="item-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                data-item-num="${suggestion.item_num}"
+                                data-description="${suggestion.description}"
+                            />
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Item ${suggestion.item_num}</h3>
+                                <p class="text-sm text-gray-600">${suggestion.description}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900">${confidence}%</div>
+                            <div class="w-20 h-2 bg-gray-200 rounded-full mt-1">
+                                <div class="h-2 rounded-full ${confidenceColor}" style="width: ${confidence}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">${suggestion.group}</span>
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded">Category ${suggestion.category}</span>
+                            ${suggestion.provider_type ? `<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">${suggestion.provider_type}</span>` : ''}
+                        </div>
+                        <div class="mt-2 text-gray-600">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            ${suggestion.evidence}
+                        </div>
+                    </div>
+                `;
+
+                // Add selection event
+                const checkbox = resultItem.querySelector('.item-checkbox');
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedItems.add({
+                            item_num: this.dataset.itemNum,
+                            description: this.dataset.description
+                        });
+                    } else {
+                        selectedItems.delete(Array.from(selectedItems).find(item => item.item_num === this.dataset.itemNum));
+                    }
+                    updateSelectedItems();
+                });
+
+                resultsList.appendChild(resultItem);
+            });
+
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // Get confidence color
+        function getConfidenceColor(confidence) {
+            if (confidence >= 80) return 'bg-green-500';
+            if (confidence >= 60) return 'bg-yellow-500';
+            if (confidence >= 40) return 'bg-orange-500';
+            return 'bg-red-500';
+        }
+
+        // Update selected items
+        function updateSelectedItems() {
+            const selectedDiv = document.getElementById('selectedItems');
+            const selectedList = document.getElementById('selectedItemsList');
+
+            if (selectedItems.size === 0) {
+                selectedDiv.classList.add('hidden');
+                return;
+            }
+
+            selectedList.innerHTML = '';
+            selectedItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                itemDiv.innerHTML = `
+                    <div>
+                        <span class="font-medium text-gray-900">Item ${item.item_num}</span>
+                        <p class="text-sm text-gray-600">${item.description}</p>
+                    </div>
+                    <button
+                        class="text-red-600 hover:text-red-800 text-sm"
+                        onclick="removeSelectedItem('${item.item_num}')"
+                    >
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                selectedList.appendChild(itemDiv);
+            });
+
+            selectedDiv.classList.remove('hidden');
+        }
+
+        // Remove selected item
+        function removeSelectedItem(itemNum) {
+            selectedItems.delete(Array.from(selectedItems).find(item => item.item_num === itemNum));
+            updateSelectedItems();
+            
+            // Update checkbox status
+            const checkbox = document.querySelector(`[data-item-num="${itemNum}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        }
+
+        // Clear selection
+        function clearSelection() {
+            selectedItems.clear();
+            updateSelectedItems();
+            
+            // Update all checkboxes
+            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+
+        // Validate claim
+        async function validateClaim() {
+            if (selectedItems.size === 0) {
+                alert('Please select items to validate');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const context = {
+                    setting: document.getElementById('setting').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    referral: document.getElementById('referral').checked,
+                    provider: document.getElementById('provider').value,
+                    date: new Date().toISOString(),
+                    patient_type: 'community'
+                };
+
+                const response = await fetch('/validate_claim', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        selected_items: Array.from(selectedItems).map(item => item.item_num),
+                        context: context
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayValidationResults(data);
+                } else {
+                    throw new Error(`Validation failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                alert('Validation failed: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display validation results
+        function displayValidationResults(data) {
+            const validationDiv = document.getElementById('validationResults');
+            const validationContent = document.getElementById('validationContent');
+
+            const result = data.result;
+            
+            let html = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-green-600 mb-3">
+                            <i class="fas fa-check-circle mr-2"></i>Billable Items
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.billable_items.map(item => `
+                                <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <span class="font-medium text-green-800">Item ${item}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-red-600 mb-3">
+                            <i class="fas fa-times-circle mr-2"></i>Rejected Items
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.rejected_items.length > 0 ? result.rejected_items.map(item => `
+                                <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <span class="font-medium text-red-800">Item ${item}</span>
+                                </div>
+                            `).join('') : '<p class="text-gray-500">No rejected items</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (result.conflicts && result.conflicts.length > 0) {
+                html += `
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-yellow-600 mb-3">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Conflicts
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.conflicts.map(conflict => `
+                                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <span class="font-medium text-yellow-800">${conflict}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (result.fixes && result.fixes.length > 0) {
+                html += `
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-blue-600 mb-3">
+                            <i class="fas fa-tools mr-2"></i>Fix Suggestions
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.fixes.map(fix => `
+                                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <span class="font-medium text-blue-800">${fix}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (result.why) {
+                html += `
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-gray-600 mb-3">
+                            <i class="fas fa-question-circle mr-2"></i>Validation Explanation
+                        </h3>
+                        <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <p class="text-gray-700">${result.why}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            validationContent.innerHTML = html;
+            validationDiv.classList.remove('hidden');
+        }
+
+        // Export results
+        function exportResults() {
+            if (selectedItems.size === 0) {
+                alert('No items to export');
+                return;
+            }
+
+            const data = {
+                search_type: currentSearchType,
+                selected_items: Array.from(selectedItems),
+                timestamp: new Date().toISOString(),
+                context: {
+                    setting: document.getElementById('setting').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    referral: document.getElementById('referral').checked,
+                    provider: document.getElementById('provider').value
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mbs_search_results_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Show/hide loading overlay
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

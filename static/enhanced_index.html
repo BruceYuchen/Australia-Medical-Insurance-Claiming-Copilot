@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBS匹配系统 - 增强版智能搜索</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .confidence-bar {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #10b981 100%);
+        }
+        .confidence-fill {
+            transition: width 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .search-type-card {
+            transition: all 0.3s ease;
+        }
+        .search-type-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .search-type-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 头部 -->
+    <header class="bg-white shadow-lg border-b-4 border-blue-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <i class="fas fa-brain text-3xl text-blue-600 mr-3"></i>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">MBS匹配系统 - 增强版</h1>
+                        <p class="text-sm text-gray-600">AI驱动的智能项目建议与申报验证</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div id="systemStatus" class="flex items-center">
+                        <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">检查中...</span>
+                    </div>
+                    <button id="refreshBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>刷新
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 搜索类型选择 -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">选择搜索类型</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="search-type-card selected border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-type="hybrid">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-magic text-2xl text-blue-600 mr-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-900">混合搜索</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">结合关键词和语义理解</p>
+                    <div class="flex items-center text-xs text-gray-500">
+                        <i class="fas fa-star text-yellow-500 mr-1"></i>
+                        <span>推荐</span>
+                        <span class="mx-2">•</span>
+                        <span>准确率: 最高</span>
+                    </div>
+                </div>
+                
+                <div class="search-type-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-type="semantic">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-brain text-2xl text-purple-600 mr-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-900">语义搜索</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">基于AI语义理解</p>
+                    <div class="flex items-center text-xs text-gray-500">
+                        <span>准确率: 高</span>
+                        <span class="mx-2">•</span>
+                        <span>速度: 中等</span>
+                    </div>
+                </div>
+                
+                <div class="search-type-card border-2 border-gray-200 rounded-lg p-4 cursor-pointer" data-type="tfidf">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-search text-2xl text-green-600 mr-3"></i>
+                        <h3 class="text-lg font-semibold text-gray-900">TF-IDF搜索</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">传统关键词匹配</p>
+                    <div class="flex items-center text-xs text-gray-500">
+                        <span>准确率: 中等</span>
+                        <span class="mx-2">•</span>
+                        <span>速度: 最快</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索表单 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">智能项目搜索</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 左侧：输入区域 -->
+                <div>
+                    <div class="mb-6">
+                        <label for="symptoms" class="block text-sm font-medium text-gray-700 mb-2">
+                            症状描述
+                        </label>
+                        <textarea
+                            id="symptoms"
+                            rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="请输入患者的症状描述或医疗记录..."
+                        ></textarea>
+                    </div>
+
+                    <div class="mb-6">
+                        <label for="topK" class="block text-sm font-medium text-gray-700 mb-2">
+                            返回结果数量
+                        </label>
+                        <select
+                            id="topK"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="5">5个结果</option>
+                            <option value="10" selected>10个结果</option>
+                            <option value="15">15个结果</option>
+                            <option value="20">20个结果</option>
+                        </select>
+                    </div>
+
+                    <button
+                        id="searchBtn"
+                        class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                        <i class="fas fa-search mr-2"></i>搜索项目
+                    </button>
+                </div>
+
+                <!-- 右侧：上下文信息 -->
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">医疗上下文</h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="setting" class="block text-sm font-medium text-gray-700 mb-1">设置</label>
+                            <select
+                                id="setting"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="consulting_rooms">咨询室</option>
+                                <option value="hospital">医院</option>
+                                <option value="home">家庭</option>
+                                <option value="nursing_home">养老院</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">持续时间(分钟)</label>
+                            <input
+                                type="number"
+                                id="duration"
+                                value="30"
+                                min="5"
+                                max="120"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="provider" class="block text-sm font-medium text-gray-700 mb-1">提供者类型</label>
+                            <select
+                                id="provider"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="general practitioner">全科医生</option>
+                                <option value="specialist">专科医生</option>
+                                <option value="nurse">护士</option>
+                                <option value="physiotherapist">物理治疗师</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input
+                                type="checkbox"
+                                id="referral"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <label for="referral" class="ml-2 block text-sm text-gray-700">
+                                转诊患者
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 搜索结果 -->
+        <div id="searchResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">搜索结果</h2>
+                    <div class="flex items-center space-x-4">
+                        <span id="searchTime" class="text-sm text-gray-500"></span>
+                        <span id="resultCount" class="text-sm text-gray-500"></span>
+                    </div>
+                </div>
+                
+                <div id="searchResultsList" class="space-y-4">
+                    <!-- 搜索结果将在这里动态生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 项目选择区域 -->
+        <div id="selectedItems" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900">已选项目</h2>
+                    <button
+                        id="clearSelectionBtn"
+                        class="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                        <i class="fas fa-trash mr-1"></i>清空选择
+                    </button>
+                </div>
+                
+                <div id="selectedItemsList" class="space-y-2">
+                    <!-- 已选项目将在这里显示 -->
+                </div>
+                
+                <div class="mt-6 flex space-x-4">
+                    <button
+                        id="validateBtn"
+                        class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                        <i class="fas fa-check-circle mr-2"></i>验证申报
+                    </button>
+                    <button
+                        id="exportBtn"
+                        class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                    >
+                        <i class="fas fa-download mr-2"></i>导出结果
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 验证结果 -->
+        <div id="validationResults" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">验证结果</h2>
+                <div id="validationContent">
+                    <!-- 验证结果将在这里显示 -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="text-gray-700">正在处理...</span>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let selectedItems = new Set();
+        let currentSearchType = 'hybrid';
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            checkSystemStatus();
+        });
+
+        // 事件监听器
+        function initializeEventListeners() {
+            // 搜索类型选择
+            document.querySelectorAll('.search-type-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectSearchType(this.dataset.type);
+                });
+            });
+
+            // 搜索按钮
+            document.getElementById('searchBtn').addEventListener('click', performSearch);
+
+            // 清空选择
+            document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
+
+            // 验证按钮
+            document.getElementById('validateBtn').addEventListener('click', validateClaim);
+
+            // 导出按钮
+            document.getElementById('exportBtn').addEventListener('click', exportResults);
+
+            // 刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', checkSystemStatus);
+        }
+
+        // 选择搜索类型
+        function selectSearchType(type) {
+            currentSearchType = type;
+            
+            // 更新UI
+            document.querySelectorAll('.search-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+        }
+
+        // 检查系统状态
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('systemStatus');
+                if (data.status === 'healthy') {
+                    statusElement.innerHTML = `
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">系统正常</span>
+                    `;
+                } else {
+                    statusElement.innerHTML = `
+                        <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                        <span class="text-sm text-gray-600">系统异常</span>
+                    `;
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('systemStatus');
+                statusElement.innerHTML = `
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-gray-600">连接失败</span>
+                `;
+            }
+        }
+
+        // 执行搜索
+        async function performSearch() {
+            const symptoms = document.getElementById('symptoms').value.trim();
+            if (!symptoms) {
+                alert('请输入症状描述');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const context = {
+                    setting: document.getElementById('setting').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    referral: document.getElementById('referral').checked,
+                    provider: document.getElementById('provider').value,
+                    date: new Date().toISOString(),
+                    patient_type: 'community'
+                };
+
+                const topK = parseInt(document.getElementById('topK').value);
+
+                let url, params;
+                if (currentSearchType === 'tfidf') {
+                    url = '/suggest_items';
+                    params = {
+                        transcript: symptoms,
+                        context: context,
+                        top_k: topK
+                    };
+                } else {
+                    url = '/suggest_items_enhanced';
+                    params = {
+                        transcript: symptoms,
+                        context: context,
+                        top_k: topK
+                    };
+                }
+
+                const startTime = performance.now();
+                const response = await fetch(url + (currentSearchType !== 'tfidf' ? `?search_type=${currentSearchType}` : ''), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(params)
+                });
+
+                const endTime = performance.now();
+                const searchTime = endTime - startTime;
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displaySearchResults(data.suggestions, searchTime);
+                } else {
+                    throw new Error(`搜索失败: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('搜索错误:', error);
+                alert('搜索失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 显示搜索结果
+        function displaySearchResults(suggestions, searchTime) {
+            const resultsDiv = document.getElementById('searchResults');
+            const resultsList = document.getElementById('searchResultsList');
+            const searchTimeSpan = document.getElementById('searchTime');
+            const resultCountSpan = document.getElementById('resultCount');
+
+            // 更新统计信息
+            searchTimeSpan.textContent = `搜索时间: ${searchTime.toFixed(2)}ms`;
+            resultCountSpan.textContent = `找到 ${suggestions.length} 个结果`;
+
+            // 清空之前的结果
+            resultsList.innerHTML = '';
+
+            // 显示结果
+            suggestions.forEach((suggestion, index) => {
+                const confidence = Math.round(suggestion.score * 100);
+                const confidenceColor = getConfidenceColor(confidence);
+                
+                const resultItem = document.createElement('div');
+                resultItem.className = 'border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow fade-in';
+                resultItem.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                class="item-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                data-item-num="${suggestion.item_num}"
+                                data-description="${suggestion.description}"
+                            />
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Item ${suggestion.item_num}</h3>
+                                <p class="text-sm text-gray-600">${suggestion.description}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900">${confidence}%</div>
+                            <div class="w-20 h-2 bg-gray-200 rounded-full mt-1">
+                                <div class="h-2 rounded-full ${confidenceColor}" style="width: ${confidence}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">${suggestion.group}</span>
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded">类别 ${suggestion.category}</span>
+                            ${suggestion.provider_type ? `<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">${suggestion.provider_type}</span>` : ''}
+                        </div>
+                        <div class="mt-2 text-gray-600">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            ${suggestion.evidence}
+                        </div>
+                    </div>
+                `;
+
+                // 添加选择事件
+                const checkbox = resultItem.querySelector('.item-checkbox');
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        selectedItems.add({
+                            item_num: this.dataset.itemNum,
+                            description: this.dataset.description
+                        });
+                    } else {
+                        selectedItems.delete(Array.from(selectedItems).find(item => item.item_num === this.dataset.itemNum));
+                    }
+                    updateSelectedItems();
+                });
+
+                resultsList.appendChild(resultItem);
+            });
+
+            resultsDiv.classList.remove('hidden');
+        }
+
+        // 获取置信度颜色
+        function getConfidenceColor(confidence) {
+            if (confidence >= 80) return 'bg-green-500';
+            if (confidence >= 60) return 'bg-yellow-500';
+            if (confidence >= 40) return 'bg-orange-500';
+            return 'bg-red-500';
+        }
+
+        // 更新已选项目
+        function updateSelectedItems() {
+            const selectedDiv = document.getElementById('selectedItems');
+            const selectedList = document.getElementById('selectedItemsList');
+
+            if (selectedItems.size === 0) {
+                selectedDiv.classList.add('hidden');
+                return;
+            }
+
+            selectedList.innerHTML = '';
+            selectedItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                itemDiv.innerHTML = `
+                    <div>
+                        <span class="font-medium text-gray-900">Item ${item.item_num}</span>
+                        <p class="text-sm text-gray-600">${item.description}</p>
+                    </div>
+                    <button
+                        class="text-red-600 hover:text-red-800 text-sm"
+                        onclick="removeSelectedItem('${item.item_num}')"
+                    >
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                selectedList.appendChild(itemDiv);
+            });
+
+            selectedDiv.classList.remove('hidden');
+        }
+
+        // 移除已选项目
+        function removeSelectedItem(itemNum) {
+            selectedItems.delete(Array.from(selectedItems).find(item => item.item_num === itemNum));
+            updateSelectedItems();
+            
+            // 更新复选框状态
+            const checkbox = document.querySelector(`[data-item-num="${itemNum}"]`);
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        }
+
+        // 清空选择
+        function clearSelection() {
+            selectedItems.clear();
+            updateSelectedItems();
+            
+            // 更新所有复选框
+            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+
+        // 验证申报
+        async function validateClaim() {
+            if (selectedItems.size === 0) {
+                alert('请先选择要验证的项目');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const context = {
+                    setting: document.getElementById('setting').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    referral: document.getElementById('referral').checked,
+                    provider: document.getElementById('provider').value,
+                    date: new Date().toISOString(),
+                    patient_type: 'community'
+                };
+
+                const response = await fetch('/validate_claim', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        selected_items: Array.from(selectedItems).map(item => item.item_num),
+                        context: context
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayValidationResults(data);
+                } else {
+                    throw new Error(`验证失败: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('验证错误:', error);
+                alert('验证失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 显示验证结果
+        function displayValidationResults(data) {
+            const validationDiv = document.getElementById('validationResults');
+            const validationContent = document.getElementById('validationContent');
+
+            const result = data.result;
+            
+            let html = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-green-600 mb-3">
+                            <i class="fas fa-check-circle mr-2"></i>可计费项目
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.billable_items.map(item => `
+                                <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <span class="font-medium text-green-800">Item ${item}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-red-600 mb-3">
+                            <i class="fas fa-times-circle mr-2"></i>被拒绝项目
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.rejected_items.length > 0 ? result.rejected_items.map(item => `
+                                <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <span class="font-medium text-red-800">Item ${item}</span>
+                                </div>
+                            `).join('') : '<p class="text-gray-500">无被拒绝项目</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (result.conflicts && result.conflicts.length > 0) {
+                html += `
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-yellow-600 mb-3">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>冲突项目
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.conflicts.map(conflict => `
+                                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <span class="font-medium text-yellow-800">${conflict}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (result.fixes && result.fixes.length > 0) {
+                html += `
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-blue-600 mb-3">
+                            <i class="fas fa-tools mr-2"></i>修复建议
+                        </h3>
+                        <div class="space-y-2">
+                            ${result.fixes.map(fix => `
+                                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <span class="font-medium text-blue-800">${fix}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (result.why) {
+                html += `
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-gray-600 mb-3">
+                            <i class="fas fa-question-circle mr-2"></i>验证说明
+                        </h3>
+                        <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <p class="text-gray-700">${result.why}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            validationContent.innerHTML = html;
+            validationDiv.classList.remove('hidden');
+        }
+
+        // 导出结果
+        function exportResults() {
+            if (selectedItems.size === 0) {
+                alert('没有可导出的项目');
+                return;
+            }
+
+            const data = {
+                search_type: currentSearchType,
+                selected_items: Array.from(selectedItems),
+                timestamp: new Date().toISOString(),
+                context: {
+                    setting: document.getElementById('setting').value,
+                    duration: parseInt(document.getElementById('duration').value),
+                    referral: document.getElementById('referral').checked,
+                    provider: document.getElementById('provider').value
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mbs_search_results_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 显示/隐藏加载提示
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
